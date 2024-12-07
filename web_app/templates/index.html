@@ -97,7 +97,7 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            fetch('https://pr-project-f8c7fbee3ae5.herokuapp.com/')
+            fetch('https://pr-project-f8c7fbee3ae5.herokuapp.com/api/users')
                 .then(response => response.json())
                 .then(data => {
                     const usersTableBody = document.querySelector('#usersTable tbody');
@@ -167,7 +167,7 @@
 
                 if (firstName && lastName) {
                     // Call the /register API with the provided data
-                    fetch('https://pr-project-f8c7fbee3ae5.herokuapp.com/', {
+                    fetch('https://pr-project-f8c7fbee3ae5.herokuapp.com/api/register', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
