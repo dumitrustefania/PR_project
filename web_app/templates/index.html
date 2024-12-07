@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gym Admin Page</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            text-align: center; /* Center align text in table cells */
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        /* Modal styles */
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 1;
+            padding-top: 100px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 300px;
+            text-align: left;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gym Users</h1>
+    <table id="usersTable">
+        <thead>
+            <tr>
+                <th>Card ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Attendances</th>
+                <th>Valid Membership</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    
+    <!-- Modal for new user input -->
+    <div id="newUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>New user detected!</h2>
+            <h3>Please register.</h3>
+            <div class="form-group">
+                <label for="firstName">First Name:</label>
+                <input type="text" id="firstName">
+            </div>
+            <div class="form-group">
+                <label for="lastName">Last Name:</label>
+                <input type="text" id="lastName">
+            </div>
+            <div class="form-group">
+                <label for="validMembership">Valid Membership?</label>
+                <input type="checkbox" id="validMembership" checked>
+            </div>
+            <button id="submitUser">Submit</button>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('https://pm-project-25384383132e.herokuapp.com/api/users')
+                .then(response => response.json())
+                .then(data => {
+                    const usersTableBody = document.querySelector('#usersTable tbody');
+                    for (let cardId in data) {
+                        if (data.hasOwnProperty(cardId)) {
+                            let user = data[cardId];
+                            let row = document.createElement('tr');
+
+                            let cellCardId = document.createElement('td');
+                            cellCardId.textContent = cardId;
+                            row.appendChild(cellCardId);
+
+                            let cellFirstName = document.createElement('td');
+                            cellFirstName.textContent = user.firstName;
+                            row.appendChild(cellFirstName);
+
+                            let cellLastName = document.createElement('td');
+                            cellLastName.textContent = user.lastName;
+                            row.appendChild(cellLastName);
+
+                            let cellAttendances = document.createElement('td');
+                            cellAttendances.textContent = user.attendances;
+                            row.appendChild(cellAttendances);
+
+                            let cellMembership = document.createElement('td');
+                            cellMembership.innerHTML = user.paidMembership ? '&#x2714;' : '&#x2718;';
+                            row.appendChild(cellMembership);
+
+                            usersTableBody.appendChild(row);
+                        }
+                    }
+                })
+                .catch(error => console.error('Error fetching user data:', error));
+        });
+
+        var socket = io();
+
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+
+        socket.on('new_user_detected', function(data) {
+            var cardId = data.card_id;
+            var modal = document.getElementById("newUserModal");
+            var closeModal = document.getElementsByClassName("close")[0];
+
+            // Open the modal
+            modal.style.display = "block";
+
+            // When the user clicks on <span> (x), close the modal
+            closeModal.onclick = function() {
+                modal.style.display = "none";
+            }
+
+            // When the user clicks anywhere outside of the modal, close it
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+
+            // Handle form submission
+            document.getElementById("submitUser").onclick = function() {
+                var firstName = document.getElementById("firstName").value;
+                var lastName = document.getElementById("lastName").value;
+                var validMembership = document.getElementById("validMembership").checked;
+
+                if (firstName && lastName) {
+                    // Call the /register API with the provided data
+                    fetch('https://pm-project-25384383132e.herokuapp.com/api/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            card_id: cardId,
+                            data: {
+                                firstName: firstName,
+                                lastName: lastName,
+                                paidMembership: validMembership
+                            }
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        modal.style.display = "none";
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                } else {
+                    alert("Please fill in all fields.");
+                }
+            }
+        });
+    </script>
+</body>
+</html>
