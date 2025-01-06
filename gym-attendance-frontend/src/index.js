@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import './index.css';
+import './index.css';  // Global styles for your app
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import UserList from './components/UserList';
 import UserDetails from './components/UserDetails';
 import Statistics from './components/Statistics';
@@ -12,15 +12,18 @@ import io from 'socket.io-client';  // Import socket.io-client
 const socket = io('https://pr-project-f8c7fbee3ae5.herokuapp.com');  // Ensure this is the correct backend URL
 
 function App() {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [cardId, setCardId] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);  // Modal state
+    const [cardId, setCardId] = useState(null);  // Card ID state
 
+    // Listen for the 'new_user_detected' event from the backend
     useEffect(() => {
-        // Listen for the 'new_user_detected' event from the backend
         socket.on('new_user_detected', (data) => {
             setCardId(data.card_id);
-            setIsModalOpen(true);  // Open the modal to register the user
+            setIsModalOpen(true);  // Open the modal when a new user is detected
         });
+
+        // Clean up the socket listener when the component unmounts
+        return () => socket.off('new_user_detected');
     }, []);
 
     return (
@@ -48,4 +51,5 @@ function App() {
     );
 }
 
+// Render the App component in the 'root' div
 ReactDOM.render(<App />, document.getElementById('root'));

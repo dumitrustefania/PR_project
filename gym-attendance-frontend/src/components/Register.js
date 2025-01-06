@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
+import './Register.css';  // Import the CSS file for the modal styling
 
 const socket = io('https://pr-project-f8c7fbee3ae5.herokuapp.com');
 
-const Register = () => {
+function Register() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [cardId, setCardId] = useState(null);
 
@@ -37,31 +38,33 @@ const Register = () => {
     return (
         <div>
             {isModalOpen && (
-                <div className="modal">
-                    <h2>Register New User</h2>
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            const userData = {
-                                firstName: e.target.firstName.value,
-                                lastName: e.target.lastName.value,
-                                paidMembership: e.target.paidMembership.checked,
-                            };
-                            handleRegisterUser(userData);
-                        }}
-                    >
-                        <input type="text" name="firstName" placeholder="First Name" required />
-                        <input type="text" name="lastName" placeholder="Last Name" required />
-                        <label>
-                            Paid Membership:
-                            <input type="checkbox" name="paidMembership" />
-                        </label>
-                        <button type="submit">Register</button>
-                    </form>
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <h2>Register New User</h2>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                const userData = {
+                                    firstName: e.target.firstName.value,
+                                    lastName: e.target.lastName.value,
+                                    paidMembership: e.target.paidMembership.checked,
+                                };
+                                handleRegisterUser(userData);
+                            }}
+                        >
+                            <input type="text" name="firstName" placeholder="First Name" required />
+                            <input type="text" name="lastName" placeholder="Last Name" required />
+                            <label>
+                                Paid Membership:
+                                <input type="checkbox" name="paidMembership" />
+                            </label>
+                            <button type="submit">Register</button>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>
     );
-};
+}
 
 export default Register;
