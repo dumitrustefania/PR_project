@@ -39,7 +39,7 @@ function App() {
     const toggleGymStatus = async () => {
         try {
             // Send a POST request to the backend to toggle the gym status
-            const response = await fetch('/api/update_gym_status', {
+            const response = await fetch('https://pr-project-f8c7fbee3ae5.herokuapp.com/api/update_gym_status', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
