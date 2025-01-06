@@ -9,7 +9,7 @@ import Register from './components/Register';  // Import your Register component
 import io from 'socket.io-client';  // Import socket.io-client
 
 // Create a socket connection for the entire app
-const socket = io('https://pr-project-f8c7fbee3ae5.herokuapp.com');  // Ensure this is the correct backend URL
+const socket = io('https://pr-project-f8c7fbee3ae5.herokuapp.com');
 
 function App() {
     const [isModalOpen, setIsModalOpen] = useState(false);  // Modal state
@@ -44,7 +44,7 @@ function App() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ gymStatus: !gymClosed }), // Toggle the gym status
+                body: JSON.stringify({ gym_status: !gymClosed }), // Toggle the gym status
             });
 
             if (response.ok) {
