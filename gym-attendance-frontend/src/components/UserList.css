@@ -1,0 +1,24 @@
+.user-list {
+    padding: 20px;
+}
+
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.user-table th, .user-table td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #ddd;
+}
+
+.user-table th {
+    background-color: #f4f4f4;
+}
+
+.user-table tr:hover {
+    background-color: #f1f1f1;
+    cursor: pointer;
+}

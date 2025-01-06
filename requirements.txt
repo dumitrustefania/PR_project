@@ -1,7 +1,7 @@
-gunicorn
-Flask
-flask_socketio
-pydantic
-flask_cors
-eventlet
-gevent-websocket
+Flask==2.2.2
+Flask-SocketIO==5.3.1
+Flask-Cors==3.1.1
+gunicorn==20.1.0
+eventlet==0.33.1
+gevent-websocket==0.10.1
+pydantic==1.10.2  # Optional, based on your usage of pydantic
