@@ -32,7 +32,7 @@ def check_user():
 
         response_data["status"] = "valid"
         response_data["first_name"] = user["firstName"]
-        response_data["attendances"] = user["attendances"].length
+        response_data["attendances"] = len(user["attendances"])
     else:
         response_data["status"] = "invalid"
 
