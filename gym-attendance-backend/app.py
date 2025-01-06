@@ -5,7 +5,7 @@ from user_data import user_data  # Import user_data from user_data.py
 from flask_cors import CORS
 import os
 
-app = Flask(__name__, static_folder="build", static_url_path="")
+app = Flask(__name__, static_folder="static", static_url_path="")
 socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app, origins="*")
 
