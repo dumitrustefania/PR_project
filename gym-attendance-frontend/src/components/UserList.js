@@ -7,7 +7,7 @@ export default function UserList() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/users')
+        fetch('https://pr-project-f8c7fbee3ae5.herokuapp.com/api/users')
             .then((res) => res.json())
             .then((data) => setUsers(Object.entries(data)));
     }, []);

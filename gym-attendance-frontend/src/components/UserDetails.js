@@ -10,7 +10,7 @@ export default function UserDetails() {
 
     useEffect(() => {
         // Fetch user details by card ID
-        fetch(`http://localhost:5000/api/user/${id}`)
+        fetch(`https://pr-project-f8c7fbee3ae5.herokuapp.com/api/user/${id}`)
             .then((res) => res.json())
             .then((data) => setUser(data));
     }, [id]);

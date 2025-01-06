@@ -9,7 +9,7 @@ export default function Statistics() {
     const [stats, setStats] = useState(null);
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/statistics')
+        fetch('https://pr-project-f8c7fbee3ae5.herokuapp.com/api/statistics')
             .then((res) => res.json())
             .then((data) => setStats(data));
     }, []);
