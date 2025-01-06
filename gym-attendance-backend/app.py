@@ -9,6 +9,23 @@ app = Flask(__name__, static_folder="static", static_url_path="")
 socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app, origins="*")
 
+# Track the gym status (True for closed, False for open)
+gym_status = False  # Initially, set the gym to open
+
+
+@app.route("/api/test", methods=["POST"])
+def test_route():
+    return jsonify({"message": "Test POST successful"})
+
+@app.route("/api/update_gym_status", methods=["POST"])
+def update_gym_status():
+    global gym_status
+    gym_status = request.json.get("gym_status")
+
+    # Emit the gym status update to all connected clients
+    socketio.emit("gym_status_updated", {"gym_status": gym_status})
+
+    return jsonify({"message": "Gym status updated successfully", "gym_status": gym_status})
 
 @app.route("/api/check_user", methods=["POST"])
 def check_user():
