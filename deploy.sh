@@ -13,6 +13,4 @@ cd ..
 rm -rf ./gym-attendance-backend/static # Clean up old static files
 cp -r ./gym-attendance-frontend/build ./gym-attendance-backend/static
 
-echo "Starting backend..."
-cd gym-attendance-backend
-gunicorn --worker-class eventlet -w 1 gym-attendance-backend.app:app
+echo "Frontend build is complete and copied to backend."
