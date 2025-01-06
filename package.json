@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-      "heroku-prebuild": "cd gym-attendance-frontend && npm install && npm run build && cd .. && cd gym-attendance-backend && pip install -r requirements.txt"
+      "heroku-prebuild": "cd gym-attendance-frontend && npm install && npm run build && cd .."
     },
     "dependencies": {
       "npm": "^8.5.0"
