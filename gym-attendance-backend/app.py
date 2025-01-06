@@ -12,11 +12,6 @@ CORS(app, origins="*")
 # Track the gym status (True for closed, False for open)
 gym_status = False  # Initially, set the gym to open
 
-
-@app.route("/api/test", methods=["POST"])
-def test_route():
-    return jsonify({"message": "Test POST successful"})
-
 @app.route("/api/update_gym_status", methods=["POST"])
 def update_gym_status():
     global gym_status
