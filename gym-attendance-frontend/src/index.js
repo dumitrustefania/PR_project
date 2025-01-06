@@ -14,6 +14,7 @@ const socket = io('https://pr-project-f8c7fbee3ae5.herokuapp.com');  // Ensure t
 function App() {
     const [isModalOpen, setIsModalOpen] = useState(false);  // Modal state
     const [cardId, setCardId] = useState(null);  // Card ID state
+    const [gymClosed, setGymClosed] = useState(false);  // State to track gym status (closed or open)
 
     // Listen for the 'new_user_detected' event from the backend
     useEffect(() => {
@@ -22,13 +23,49 @@ function App() {
             setIsModalOpen(true);  // Open the modal when a new user is detected
         });
 
-        // Clean up the socket listener when the component unmounts
-        return () => socket.off('new_user_detected');
+        // Listen for the gym status update from the backend
+        socket.on('gym_status_updated', (data) => {
+            setGymClosed(data.gym_status);  // Update the gym status (open/closed)
+        });
+
+        // Clean up the socket listeners when the component unmounts
+        return () => {
+            socket.off('new_user_detected');
+            socket.off('gym_status_updated');
+        };
     }, []);
+
+    // Function to toggle the gym status (open/closed)
+    const toggleGymStatus = async () => {
+        try {
+            // Send a POST request to the backend to toggle the gym status
+            const response = await fetch('/api/update_gym_status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ gymStatus: !gymClosed }), // Toggle the gym status
+            });
+
+            if (response.ok) {
+                setGymClosed(!gymClosed);  // Update the local state with the new gym status
+            } else {
+                alert('Failed to update gym status');
+            }
+        } catch (error) {
+            console.error('Error updating gym status:', error);
+            alert('Error updating gym status');
+        }
+    };
 
     return (
         <Router>
             <div className="app">
+                <h1>Gym Status: {gymClosed ? 'Closed' : 'Open'}</h1>
+                <button onClick={toggleGymStatus}>
+                    {gymClosed ? 'Open Gym' : 'Close Gym'}
+                </button>
+
                 <Routes>
                     <Route path="/" element={
                         <div>
