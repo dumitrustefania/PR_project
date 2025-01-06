@@ -1,0 +1,15 @@
+{
+    "name": "gym-attendance-app",
+    "engines": {
+      "node": "16.x"
+    },
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+      "heroku-prebuild": "cd gym-attendance-frontend && npm install && npm run build && cd .. && cd gym-attendance-backend && pip install -r requirements.txt"
+    },
+    "dependencies": {
+      "npm": "^8.5.0"
+    }
+  }
+  
