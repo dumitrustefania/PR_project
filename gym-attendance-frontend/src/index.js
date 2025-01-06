@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';  // Add this import
 import ReactDOM from 'react-dom';
 import './index.css';  // Global styles for your app
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
