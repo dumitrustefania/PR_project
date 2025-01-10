@@ -4,7 +4,9 @@ import paho.mqtt.client as mqtt
 from flask import Flask, jsonify, request, send_from_directory
 from flask_socketio import SocketIO, emit
 from datetime import datetime
+from user_data import user_data  # Import user_data from user_data.py
 import json
+from flask_cors import CORS
 import ssl
 import logging
 
@@ -34,7 +36,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 console_handler = logging.StreamHandler(sys.stdout)  # Sends logs to stdout
 console_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
@@ -46,6 +48,7 @@ logger.addHandler(error_handler)
 
 sys.stdout.flush()  # Flush stdout immediately
 
+
 def init_mqtt_client():
     global mqtt_client
     logger.debug("Initializing MQTT client...")
@@ -56,7 +59,7 @@ def init_mqtt_client():
             ca_certs=AWS_CA_CERT,
             certfile=AWS_CERT,
             keyfile=AWS_PRIVATE_KEY,
-            tls_version=ssl.PROTOCOL_TLSv1_2
+            tls_version=ssl.PROTOCOL_TLSv1_2,
         )
         logger.info("TLS setup completed successfully.")
     except Exception as e:
@@ -73,10 +76,12 @@ def init_mqtt_client():
     except Exception as e:
         logger.error(f"Error connecting to MQTT broker: {e}")
 
+
 # Callback functions for MQTT
 def on_connect(client, userdata, flags, rc):
     logger.info(f"Connected to AWS IoT Core with result code {rc}")
     client.subscribe(TOPIC_CHECK_USER)
+
 
 def on_message(client, userdata, msg):
     logger.debug(f"Message received on topic {msg.topic}: {msg.payload.decode()}")
@@ -93,7 +98,10 @@ def on_message(client, userdata, msg):
             if user.get("paidMembership"):
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 user["attendances"].append(timestamp)
-                socketio.emit("user_updated", {"card_id": card_id, "attendances": user["attendances"]})
+                socketio.emit(
+                    "user_updated",
+                    {"card_id": card_id, "attendances": user["attendances"]},
+                )
                 response_data["status"] = "valid"
                 response_data["first_name"] = user["firstName"]
                 response_data["attendances"] = len(user["attendances"])
@@ -101,13 +109,17 @@ def on_message(client, userdata, msg):
                 response_data["status"] = "invalid"
             client.publish(TOPIC_USER_DETAILS, json.dumps(response_data))
 
+
 @app.route("/api/update_gym_status", methods=["POST"])
 def update_gym_status():
     global gym_status
     gym_status = request.json.get("gym_status")
     logger.info(f"Gym status updated to: {gym_status}")
     mqtt_client.publish(TOPIC_GYM_STATUS, json.dumps({"gym_status": gym_status}))
-    return jsonify({"message": "Gym status updated successfully", "gym_status": gym_status})
+    return jsonify(
+        {"message": "Gym status updated successfully", "gym_status": gym_status}
+    )
+
 
 # Register user via frontend
 @app.route("/api/register", methods=["POST"])
@@ -124,6 +136,7 @@ def register_user():
     else:
         logger.warning(f"User {card_id} already registered.")
         return jsonify({"error": "User already registered"}), 400
+
 
 @app.route("/api/users", methods=["GET"])
 def get_all_users():
@@ -155,11 +168,9 @@ def get_statistics():
             "Saturday": 0,
             "Sunday": 0,
         },
-        "hourly_load": {
-            str(i): 0 for i in range(9, 24)  # Gym open between 9 and 23
-        },
-        "attendances1": {}, 
-        "attendances2": {}, 
+        "hourly_load": {str(i): 0 for i in range(9, 24)},  # Gym open between 9 and 23
+        "attendances1": {},
+        "attendances2": {},
     }
 
     # Process attendance data
