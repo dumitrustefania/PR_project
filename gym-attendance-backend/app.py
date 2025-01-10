@@ -20,9 +20,9 @@ gym_status = False  # False = gym is open, True = gym is closed
 # MQTT Client setup
 AWS_IOT_ENDPOINT = "a3lnnu1armgvqt-ats.iot.us-east-1.amazonaws.com"
 AWS_THING_NAME = "gym_attendance_system"
-AWS_CA_CERT = "aws_ca_cert.pem"
-AWS_CERT = "aws_cert.pem"       
-AWS_PRIVATE_KEY = "aws_private_key.pem"  
+AWS_CA_CERT = "../aws_ca_cert.pem"
+AWS_CERT = "../aws_cert.pem"       
+AWS_PRIVATE_KEY = "../aws_private_key.pem"  
 
 TOPIC_USER_DETAILS = "/user_details"
 TOPIC_CHECK_USER = "/check_user"
