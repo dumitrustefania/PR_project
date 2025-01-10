@@ -22,3 +22,9 @@ Thumbs.db
 
 venv/
 venv2/
+
+*.pem.crt
+*.pem.key
+*.pem
+
+heroku_config.txt

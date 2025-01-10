@@ -1,56 +1,99 @@
+
+
+import os
+import paho.mqtt.client as mqtt
 from flask import Flask, jsonify, request, send_from_directory
 from flask_socketio import SocketIO, emit
 from datetime import datetime
 from user_data import user_data  # Import user_data from user_data.py
 from flask_cors import CORS
-import os
+import json
+import ssl
 
+# Flask application setup
 app = Flask(__name__, static_folder="static", static_url_path="")
 socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app, origins="*")
 
 # Track the gym status (True for closed, False for open)
-gym_status = False  # Initially, set the gym to open
+gym_status = False  # False = gym is open, True = gym is closed
 
+# MQTT Client setup
+AWS_IOT_ENDPOINT = "a3lnnu1armgvqt-ats.iot.us-east-1.amazonaws.com"
+AWS_THING_NAME = "gym_attendance_system"
+
+AWS_CA_CERT = os.getenv("AWS_CA_CERTIFICATE")  # CA certificate content as environment variable
+AWS_CERT = os.getenv("AWS_CERT")  # Device certificate content as environment variable
+AWS_PRIVATE_KEY = os.getenv("AWS_PRIVATE_KEY")  # Device private key content as environment variable
+
+TOPIC_USER_DETAILS = "/user_details"
+TOPIC_CHECK_USER = "/check_user"
+TOPIC_GYM_STATUS = "/gym_status"
+
+def on_connect(client, userdata, flags, rc):
+    print(f"Connected to AWS IoT Core with result code {rc}")
+    # Subscribe to the /check_user topic to listen for user check requests
+    client.subscribe(TOPIC_CHECK_USER)
+
+def on_message(client, userdata, msg):
+    print(f"Message received on topic {msg.topic}: {msg.payload.decode()}")
+    message = json.loads(msg.payload.decode())
+    card_id = message.get("card_id")
+    
+    # Process the user check
+    if card_id:
+        response_data = {}
+        if not user_data.get(card_id):
+            response_data["status"] = "not registered"
+            socketio.emit("new_user_detected", {"card_id": card_id})
+            client.publish(TOPIC_USER_DETAILS, json.dumps(response_data))
+        else:
+            user = user_data[card_id]
+            if user.get("paidMembership"):
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                user["attendances"].append(timestamp)
+                socketio.emit("user_updated", {"card_id": card_id, "attendances": user["attendances"]})
+
+                response_data["status"] = "valid"
+                response_data["first_name"] = user["firstName"]
+                response_data["attendances"] = len(user["attendances"])
+            else:
+                response_data["status"] = "invalid"
+            client.publish(TOPIC_USER_DETAILS, json.dumps(response_data))
+
+# Initialize MQTT client
+def init_mqtt_client():
+    client = mqtt.Client()
+
+    # TLS options with certificates from environment variables
+    client.tls_set(
+        ca_certs=AWS_CA_CERT,
+        certfile=AWS_CERT,
+        keyfile=AWS_PRIVATE_KEY,
+        tls_version=ssl.PROTOCOL_TLSv1_2
+    )
+
+    # Set up callback functions
+    client.on_connect = on_connect
+    client.on_message = on_message
+
+    # Connect to the AWS IoT Core broker
+    client.connect(AWS_IOT_ENDPOINT, port=8883, keepalive=60)
+
+    return client
+
+# Update gym status from frontend
 @app.route("/api/update_gym_status", methods=["POST"])
 def update_gym_status():
     global gym_status
     gym_status = request.json.get("gym_status")
 
-    # Emit the gym status update to all connected clients
-    socketio.emit("gym_status_updated", {"gym_status": gym_status})
+    # Publish the gym status update to the MQTT broker
+    mqtt_client.publish(TOPIC_GYM_STATUS, json.dumps({"gym_status": gym_status}))
 
     return jsonify({"message": "Gym status updated successfully", "gym_status": gym_status})
 
-@app.route("/api/check_user", methods=["POST"])
-def check_user():
-    card_id = request.json.get("card_id")
-    first_req = request.json.get("first_request")
-    response_data = {}
-    if not user_data.get(card_id):
-        response_data["status"] = "not registered"
-        if first_req:
-            socketio.emit("new_user_detected", {"card_id": card_id})
-        return jsonify(response_data)
-
-    user = user_data[card_id]
-    if user.get("paidMembership"):
-
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        user["attendances"].append(timestamp)
-        socketio.emit(
-            "user_updated", {"card_id": card_id, "attendances": user["attendances"]}
-        )
-
-        response_data["status"] = "valid"
-        response_data["first_name"] = user["firstName"]
-        response_data["attendances"] = len(user["attendances"])
-    else:
-        response_data["status"] = "invalid"
-
-    return jsonify(response_data)
-
-
+# Register user via frontend
 @app.route("/api/register", methods=["POST"])
 def register_user():
     card_id = request.json.get("card_id")
@@ -59,10 +102,10 @@ def register_user():
         data["attendances"] = []
         user_data[card_id] = data
         socketio.emit("user_registered", {"card_id": card_id, "user": data})
+        mqtt_client.publish(TOPIC_CHECK_USER, json.dumps({"card_id": card_id}))
         return jsonify({"message": "User registered successfully"})
     else:
         return jsonify({"error": "User already registered"}), 400
-
 
 @app.route("/api/users", methods=["GET"])
 def get_all_users():
@@ -152,3 +195,7 @@ def serve_frontend(path):
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
+
+    # Start the MQTT client loop
+    mqtt_client = init_mqtt_client()
+    mqtt_client.loop_start()
