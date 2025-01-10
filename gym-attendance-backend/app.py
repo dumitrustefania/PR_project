@@ -1,5 +1,3 @@
-
-
 import os
 import paho.mqtt.client as mqtt
 from flask import Flask, jsonify, request, send_from_directory
@@ -30,6 +28,30 @@ TOPIC_USER_DETAILS = "/user_details"
 TOPIC_CHECK_USER = "/check_user"
 TOPIC_GYM_STATUS = "/gym_status"
 
+# Global mqtt_client variable
+mqtt_client = None  # This will be initialized later
+
+# Initialize MQTT client
+def init_mqtt_client():
+    global mqtt_client
+    mqtt_client = mqtt.Client()
+
+    # TLS options with certificates from environment variables
+    mqtt_client.tls_set(
+        ca_certs=AWS_CA_CERT,
+        certfile=AWS_CERT,
+        keyfile=AWS_PRIVATE_KEY,
+        tls_version=ssl.PROTOCOL_TLSv1_2
+    )
+
+    # Set up callback functions
+    mqtt_client.on_connect = on_connect
+    mqtt_client.on_message = on_message
+
+    # Connect to the AWS IoT Core broker
+    mqtt_client.connect(AWS_IOT_ENDPOINT, port=8883, keepalive=60)
+
+# Callback functions for MQTT
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to AWS IoT Core with result code {rc}")
     # Subscribe to the /check_user topic to listen for user check requests
@@ -61,28 +83,7 @@ def on_message(client, userdata, msg):
                 response_data["status"] = "invalid"
             client.publish(TOPIC_USER_DETAILS, json.dumps(response_data))
 
-# Initialize MQTT client
-def init_mqtt_client():
-    client = mqtt.Client()
-
-    # TLS options with certificates from environment variables
-    client.tls_set(
-        ca_certs=AWS_CA_CERT,
-        certfile=AWS_CERT,
-        keyfile=AWS_PRIVATE_KEY,
-        tls_version=ssl.PROTOCOL_TLSv1_2
-    )
-
-    # Set up callback functions
-    client.on_connect = on_connect
-    client.on_message = on_message
-
-    # Connect to the AWS IoT Core broker
-    client.connect(AWS_IOT_ENDPOINT, port=8883, keepalive=60)
-
-    return client
-
-# Update gym status from frontend
+# Route to update gym status
 @app.route("/api/update_gym_status", methods=["POST"])
 def update_gym_status():
     global gym_status
@@ -194,10 +195,7 @@ def serve_frontend(path):
 
 
 if __name__ == "__main__":
-    # Start the MQTT client loop
-    mqtt_client = init_mqtt_client()
+    init_mqtt_client()
     mqtt_client.loop_start()
 
     socketio.run(app, debug=True)
-
-    
