@@ -6,3 +6,4 @@ eventlet
 gevent-websocket
 pydantic
 dnspython
+paho-mqtt
