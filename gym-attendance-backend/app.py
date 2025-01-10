@@ -14,7 +14,6 @@ app = Flask(__name__, static_folder="static", static_url_path="")
 socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app, origins="*")
 
-# Track the gym status (True for closed, False for open)
 gym_status = False  # False = gym is open, True = gym is closed
 
 # MQTT Client setup
@@ -74,10 +73,6 @@ def init_mqtt_client():
         logger.info(f"Successfully connected to MQTT broker at {AWS_IOT_ENDPOINT}.")
     except Exception as e:
         logger.error(f"Error connecting to MQTT broker: {e}")
-        return None
-
-    return mqtt_client
-
 
 # Callback functions for MQTT
 def on_connect(client, userdata, flags, rc):
@@ -230,6 +225,10 @@ def serve_frontend(path):
 
 if __name__ == "__main__":
     init_mqtt_client()
+    if mqtt_client is None:
+        log.error("MQTT client initialization failed. Exiting.")
+        exit(1)
+        
     mqtt_client.loop_start()
 
     socketio.run(app, debug=True)
