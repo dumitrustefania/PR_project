@@ -109,10 +109,21 @@ def on_message(client, userdata, msg):
                 response_data["status"] = "invalid"
             client.publish(TOPIC_USER_DETAILS, json.dumps(response_data))
 
+# Initialize MQTT client
+init_mqtt_client()
+
+if mqtt_client is None:
+    logger.info("MQTT client initialization failed. Exiting.")
+    exit(1)
+
+mqtt_client.loop_start()
+
+logger.info("MQTT client loop started.")
 
 @app.route("/api/update_gym_status", methods=["POST"])
 def update_gym_status():
     global gym_status
+    global mqtt_client
     gym_status = request.json.get("gym_status")
     logger.info(f"Gym status updated to: {gym_status}")
     mqtt_client.publish(TOPIC_GYM_STATUS, json.dumps({"gym_status": gym_status}))
@@ -124,6 +135,7 @@ def update_gym_status():
 # Register user via frontend
 @app.route("/api/register", methods=["POST"])
 def register_user():
+    global mqtt_client
     card_id = request.json.get("card_id")
     data = request.json.get("data")
     if not user_data.get(card_id):
@@ -228,9 +240,3 @@ def serve_frontend(path):
 if __name__ == "__main__":
     socketio.run(app, debug=True)
 
-    init_mqtt_client()
-    if mqtt_client is None:
-        logger.info("MQTT client initialization failed. Exiting.")
-        exit(1)
-
-    mqtt_client.loop_start()

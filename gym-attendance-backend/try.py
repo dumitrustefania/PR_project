@@ -25,6 +25,7 @@ TOPIC_GYM_STATUS = "/gym_status"
 
 # Global mqtt_client variable
 mqtt_client = None
+gym_status = "closed"  # Initial gym status
 
 # Logging setup with a console handler
 logging.basicConfig(level=logging.DEBUG)
@@ -42,23 +43,6 @@ error_handler.setFormatter(formatter)
 logger.addHandler(error_handler)
 
 sys.stdout.flush()  # Flush stdout immediately
-
-
-# Function to print certificate contents
-def print_cert_content(cert_file):
-    try:
-        with open(cert_file, "r") as file:
-            cert_content = file.read()
-            logger.debug(f"Content of {cert_file}: \n{cert_content}")
-    except Exception as e:
-        logger.error(f"Error reading {cert_file}: {e}")
-
-
-# Print contents of the certificate files
-print_cert_content(AWS_CA_CERT)
-print_cert_content(AWS_CERT)
-print_cert_content(AWS_PRIVATE_KEY)
-
 
 def init_mqtt_client():
     global mqtt_client
@@ -124,3 +108,57 @@ if mqtt_client is None:
     exit(1)
 
 mqtt_client.loop_start()
+
+logger.info("MQTT client loop started.")
+
+# Flask app setup
+app = Flask(__name__)
+CORS(app)  # Enable Cross-Origin Resource Sharing if needed
+socketio = SocketIO(app)
+
+@app.route('/')
+def index():
+    return jsonify({"message": "MQTT is running."})
+
+@app.route('/send_message', methods=['POST'])
+def send_message():
+    content = request.json
+    topic = content.get("topic")
+    message = content.get("message")
+    
+    if topic and message:
+        mqtt_client.publish(topic, message)
+        return jsonify({"status": "success", "message": f"Message sent to {topic}."})
+    else:
+        return jsonify({"status": "error", "message": "Missing topic or message."}), 400
+
+# WebSocket Example to receive messages from the frontend (optional)
+@socketio.on('connect')
+def handle_connect():
+    emit("response", {"message": "Connected to WebSocket!"})
+
+@socketio.on('send_message')
+def handle_send_message(data):
+    topic = data.get("topic")
+    message = data.get("message")
+    
+    if topic and message:
+        mqtt_client.publish(topic, message)
+        emit("response", {"message": f"Message sent to {topic}."})
+    else:
+        emit("response", {"message": "Error: Missing topic or message."})
+
+# Route to update gym status
+@app.route("/api/update_gym_status", methods=["POST"])
+def update_gym_status():
+    global gym_status
+    gym_status = request.json.get("gym_status")
+    logger.info(f"Gym status updated to: {gym_status}")
+    mqtt_client.publish(TOPIC_GYM_STATUS, json.dumps({"gym_status": gym_status}))
+    return jsonify(
+        {"message": "Gym status updated successfully", "gym_status": gym_status}
+    )
+
+if __name__ == '__main__':
+    # Start the Flask server
+    socketio.run(app, host='0.0.0.0', port=5000)
