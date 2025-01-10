@@ -226,10 +226,11 @@ def serve_frontend(path):
 
 
 if __name__ == "__main__":
+    socketio.run(app, debug=True)
+
     init_mqtt_client()
     if mqtt_client is None:
         logger.info("MQTT client initialization failed. Exiting.")
         exit(1)
 
     mqtt_client.loop_start()
-    socketio.run(app, debug=True)
