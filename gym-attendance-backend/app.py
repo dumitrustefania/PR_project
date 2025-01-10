@@ -7,6 +7,7 @@ from user_data import user_data  # Import user_data from user_data.py
 from flask_cors import CORS
 import json
 import ssl
+import logging
 
 # Flask application setup
 app = Flask(__name__, static_folder="static", static_url_path="")
@@ -31,17 +32,23 @@ TOPIC_GYM_STATUS = "/gym_status"
 # Global mqtt_client variable
 mqtt_client = None  # This will be initialized later
 
-import ssl
-import paho.mqtt.client as mqtt
+# Logging setup with a console handler
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)  # Create a logger for this module
+console_handler = logging.StreamHandler()  # Handler that outputs to the console
+console_handler.setLevel(logging.DEBUG)  # Set the level of the handler to DEBUG
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 def init_mqtt_client():
     global mqtt_client
     
-    print("Initializing MQTT client...")
+    logger.debug("Initializing MQTT client...")  # Use logger for debugging
     mqtt_client = mqtt.Client()
     
     # Log pentru a arăta că inițializăm TLS
-    print("Setting up TLS with certificates...")
+    logger.debug("Setting up TLS with certificates...")
     
     try:
         mqtt_client.tls_set(
@@ -50,24 +57,23 @@ def init_mqtt_client():
             keyfile=AWS_PRIVATE_KEY,
             tls_version=ssl.PROTOCOL_TLSv1_2
         )
-        print("TLS setup completed successfully.")
+        logger.info("TLS setup completed successfully.")
     except Exception as e:
-        print(f"Error setting up TLS: {e}")
+        logger.error(f"Error setting up TLS: {e}")
         return None
 
-    # Log pentru setarea callback-urilor
-    print("Setting up callback functions...")
+    logger.debug("Setting up callback functions...")
     mqtt_client.on_connect = on_connect
     mqtt_client.on_message = on_message
     
     # Log pentru a arăta că începem să ne conectăm la broker
-    print(f"Connecting to MQTT broker at {AWS_IOT_ENDPOINT} on port 8883...")
+    logger.debug(f"Connecting to MQTT broker at {AWS_IOT_ENDPOINT} on port 8883...")
     
     try:
         mqtt_client.connect(AWS_IOT_ENDPOINT, port=8883, keepalive=60)
-        print(f"Successfully connected to MQTT broker at {AWS_IOT_ENDPOINT}.")
+        logger.info(f"Successfully connected to MQTT broker at {AWS_IOT_ENDPOINT}.")
     except Exception as e:
-        print(f"Error connecting to MQTT broker: {e}")
+        logger.error(f"Error connecting to MQTT broker: {e}")
         return None
 
     return mqtt_client
@@ -75,12 +81,12 @@ def init_mqtt_client():
 
 # Callback functions for MQTT
 def on_connect(client, userdata, flags, rc):
-    print(f"Connected to AWS IoT Core with result code {rc}")
+    logger.info(f"Connected to AWS IoT Core with result code {rc}")
     # Subscribe to the /check_user topic to listen for user check requests
     client.subscribe(TOPIC_CHECK_USER)
 
 def on_message(client, userdata, msg):
-    print(f"Message received on topic {msg.topic}: {msg.payload.decode()}")
+    logger.debug(f"Message received on topic {msg.topic}: {msg.payload.decode()}")
     message = json.loads(msg.payload.decode())
     card_id = message.get("card_id")
     
@@ -110,6 +116,7 @@ def on_message(client, userdata, msg):
 def update_gym_status():
     global gym_status
     gym_status = request.json.get("gym_status")
+    logger.info(f"Gym status updated to: {gym_status}")
 
     # Publish the gym status update to the MQTT broker
     mqtt_client.publish(TOPIC_GYM_STATUS, json.dumps({"gym_status": gym_status}))
@@ -126,12 +133,15 @@ def register_user():
         user_data[card_id] = data
         socketio.emit("user_registered", {"card_id": card_id, "user": data})
         mqtt_client.publish(TOPIC_CHECK_USER, json.dumps({"card_id": card_id}))
+        logger.info(f"User {card_id} registered successfully.")
         return jsonify({"message": "User registered successfully"})
     else:
+        logger.warning(f"User {card_id} already registered.")
         return jsonify({"error": "User already registered"}), 400
 
 @app.route("/api/users", methods=["GET"])
 def get_all_users():
+    logger.debug("Fetching all users.")
     return jsonify(user_data)
 
 
@@ -141,11 +151,13 @@ def get_user_details(card_id):
     if user:
         return jsonify(user)
     else:
+        logger.error(f"User {card_id} not found.")
         return jsonify({"error": "User not found"}), 404
 
 
 @app.route("/api/statistics", methods=["GET"])
 def get_statistics():
+    logger.debug("Generating statistics.")
     stats = {
         "total_users": len(user_data),
         "daily_load": {
