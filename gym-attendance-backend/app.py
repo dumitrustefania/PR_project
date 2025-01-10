@@ -194,8 +194,10 @@ def serve_frontend(path):
 
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
-
     # Start the MQTT client loop
     mqtt_client = init_mqtt_client()
     mqtt_client.loop_start()
+
+    socketio.run(app, debug=True)
+
+    
