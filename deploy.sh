@@ -13,5 +13,9 @@ echo "$AWS_PRIVATE_KEY" > aws_private_key.pem
 echo "$AWS_CERT" > aws_cert.pem
 echo "$AWS_CA_CERT" > aws_ca_cert.pem
 
+cat aws_private_key.pem
+cat aws_cert.pem
+cat aws_ca_cert.pem
+
 echo "Certificates are created."
 
