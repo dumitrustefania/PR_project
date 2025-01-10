@@ -45,3 +45,16 @@ void displayScanCard(LiquidCrystal_I2C lcd) {
   lcd.clear();
   lcd.print("Scan your card");
 }
+
+void displayGymClosed(LiquidCrystal_I2C lcd) {
+  lcd.clear();
+  lcd.print("Gym is closed!");
+}
+
+void displayGymOpen(LiquidCrystal_I2C &lcd) {
+  lcd.clear();
+  lcd.print("Gym is open!");
+  delay(2000);
+  lcd.clear();
+  lcd.print("Scan your card");
+}

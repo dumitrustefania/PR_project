@@ -23,8 +23,6 @@ bool getCardID(MFRC522 rfid, String &cardID) {
     cardID += String(rfid.uid.uidByte[i] < 0x10 ? "0" : "");
     cardID += String(rfid.uid.uidByte[i], HEX);
   }
-  Serial.print("Card ID is ");
-  Serial.println(cardID);
 
   return true;
 }
