@@ -1,10 +1,9 @@
 import os
+import sys
 import paho.mqtt.client as mqtt
 from flask import Flask, jsonify, request, send_from_directory
 from flask_socketio import SocketIO, emit
 from datetime import datetime
-from user_data import user_data  # Import user_data from user_data.py
-from flask_cors import CORS
 import json
 import ssl
 import logging
@@ -19,36 +18,39 @@ gym_status = False  # False = gym is open, True = gym is closed
 # MQTT Client setup
 AWS_IOT_ENDPOINT = "a3lnnu1armgvqt-ats.iot.us-east-1.amazonaws.com"
 AWS_THING_NAME = "gym_attendance_system"
-
-AWS_CA_CERT = os.getenv("AWS_CA_CERTIFICATE")  # CA certificate content as environment variable
-AWS_CERT = os.getenv("AWS_CERT")  # Device certificate content as environment variable
-AWS_PRIVATE_KEY = os.getenv("AWS_PRIVATE_KEY")  # Device private key content as environment variable
+AWS_CA_CERT = os.getenv("AWS_CA_CERTIFICATE")
+AWS_CERT = os.getenv("AWS_CERT")
+AWS_PRIVATE_KEY = os.getenv("AWS_PRIVATE_KEY")
 
 TOPIC_USER_DETAILS = "/user_details"
 TOPIC_CHECK_USER = "/check_user"
 TOPIC_GYM_STATUS = "/gym_status"
 
 # Global mqtt_client variable
-mqtt_client = None  # This will be initialized later
+mqtt_client = None
 
 # Logging setup with a console handler
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)  # Create a logger for this module
-console_handler = logging.StreamHandler()  # Handler that outputs to the console
-console_handler.setLevel(logging.DEBUG)  # Set the level of the handler to DEBUG
+logger = logging.getLogger(__name__)
+console_handler = logging.StreamHandler(sys.stdout)  # Sends logs to stdout
+console_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
+# Optionally, log to stderr for errors
+error_handler = logging.StreamHandler(sys.stderr)
+error_handler.setLevel(logging.ERROR)
+error_handler.setFormatter(formatter)
+logger.addHandler(error_handler)
+
+sys.stdout.flush()  # Flush stdout immediately
+
 def init_mqtt_client():
     global mqtt_client
-    
-    logger.debug("Initializing MQTT client...")  # Use logger for debugging
+    logger.debug("Initializing MQTT client...")
     mqtt_client = mqtt.Client()
-    
-    # Log pentru a arăta că inițializăm TLS
     logger.debug("Setting up TLS with certificates...")
-    
     try:
         mqtt_client.tls_set(
             ca_certs=AWS_CA_CERT,
@@ -61,14 +63,10 @@ def init_mqtt_client():
         logger.error(f"Error setting up TLS: {e}")
         raise SystemExit("TLS setup failed. Exiting.")
 
-
     logger.debug("Setting up callback functions...")
     mqtt_client.on_connect = on_connect
     mqtt_client.on_message = on_message
-    
-    # Log pentru a arăta că începem să ne conectăm la broker
     logger.debug(f"Connecting to MQTT broker at {AWS_IOT_ENDPOINT} on port 8883...")
-    
     try:
         mqtt_client.connect(AWS_IOT_ENDPOINT, port=8883, keepalive=60)
         logger.info(f"Successfully connected to MQTT broker at {AWS_IOT_ENDPOINT}.")
@@ -78,15 +76,12 @@ def init_mqtt_client():
 # Callback functions for MQTT
 def on_connect(client, userdata, flags, rc):
     logger.info(f"Connected to AWS IoT Core with result code {rc}")
-    # Subscribe to the /check_user topic to listen for user check requests
     client.subscribe(TOPIC_CHECK_USER)
 
 def on_message(client, userdata, msg):
     logger.debug(f"Message received on topic {msg.topic}: {msg.payload.decode()}")
     message = json.loads(msg.payload.decode())
     card_id = message.get("card_id")
-    
-    # Process the user check
     if card_id:
         response_data = {}
         if not user_data.get(card_id):
@@ -99,7 +94,6 @@ def on_message(client, userdata, msg):
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 user["attendances"].append(timestamp)
                 socketio.emit("user_updated", {"card_id": card_id, "attendances": user["attendances"]})
-
                 response_data["status"] = "valid"
                 response_data["first_name"] = user["firstName"]
                 response_data["attendances"] = len(user["attendances"])
@@ -107,16 +101,12 @@ def on_message(client, userdata, msg):
                 response_data["status"] = "invalid"
             client.publish(TOPIC_USER_DETAILS, json.dumps(response_data))
 
-# Route to update gym status
 @app.route("/api/update_gym_status", methods=["POST"])
 def update_gym_status():
     global gym_status
     gym_status = request.json.get("gym_status")
     logger.info(f"Gym status updated to: {gym_status}")
-
-    # Publish the gym status update to the MQTT broker
     mqtt_client.publish(TOPIC_GYM_STATUS, json.dumps({"gym_status": gym_status}))
-
     return jsonify({"message": "Gym status updated successfully", "gym_status": gym_status})
 
 # Register user via frontend
@@ -231,5 +221,4 @@ if __name__ == "__main__":
         exit(1)
 
     mqtt_client.loop_start()
-
     socketio.run(app, debug=True)
