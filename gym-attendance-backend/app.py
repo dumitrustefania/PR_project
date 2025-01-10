@@ -66,10 +66,10 @@ def init_mqtt_client():
         logger.error(f"Error setting up TLS: {e}")
         raise SystemExit("TLS setup failed. Exiting.")
 
-    logger.debug("Setting up callback functions...")
+    logger.info("Setting up callback functions...")
     mqtt_client.on_connect = on_connect
     mqtt_client.on_message = on_message
-    logger.debug(f"Connecting to MQTT broker at {AWS_IOT_ENDPOINT} on port 8883...")
+    logger.info(f"Connecting to MQTT broker at {AWS_IOT_ENDPOINT} on port 8883...")
     try:
         mqtt_client.connect(AWS_IOT_ENDPOINT, port=8883, keepalive=60)
         logger.info(f"Successfully connected to MQTT broker at {AWS_IOT_ENDPOINT}.")
@@ -228,7 +228,7 @@ def serve_frontend(path):
 if __name__ == "__main__":
     init_mqtt_client()
     if mqtt_client is None:
-        logger.debug("MQTT client initialization failed. Exiting.")
+        logger.info("MQTT client initialization failed. Exiting.")
         exit(1)
 
     mqtt_client.loop_start()
