@@ -31,25 +31,47 @@ TOPIC_GYM_STATUS = "/gym_status"
 # Global mqtt_client variable
 mqtt_client = None  # This will be initialized later
 
-# Initialize MQTT client
+import ssl
+import paho.mqtt.client as mqtt
+
 def init_mqtt_client():
     global mqtt_client
+    
+    print("Initializing MQTT client...")
     mqtt_client = mqtt.Client()
+    
+    # Log pentru a arăta că inițializăm TLS
+    print("Setting up TLS with certificates...")
+    
+    try:
+        mqtt_client.tls_set(
+            ca_certs=AWS_CA_CERT,
+            certfile=AWS_CERT,
+            keyfile=AWS_PRIVATE_KEY,
+            tls_version=ssl.PROTOCOL_TLSv1_2
+        )
+        print("TLS setup completed successfully.")
+    except Exception as e:
+        print(f"Error setting up TLS: {e}")
+        return None
 
-    # TLS options with certificates from environment variables
-    mqtt_client.tls_set(
-        ca_certs=AWS_CA_CERT,
-        certfile=AWS_CERT,
-        keyfile=AWS_PRIVATE_KEY,
-        tls_version=ssl.PROTOCOL_TLSv1_2
-    )
-
-    # Set up callback functions
+    # Log pentru setarea callback-urilor
+    print("Setting up callback functions...")
     mqtt_client.on_connect = on_connect
     mqtt_client.on_message = on_message
+    
+    # Log pentru a arăta că începem să ne conectăm la broker
+    print(f"Connecting to MQTT broker at {AWS_IOT_ENDPOINT} on port 8883...")
+    
+    try:
+        mqtt_client.connect(AWS_IOT_ENDPOINT, port=8883, keepalive=60)
+        print(f"Successfully connected to MQTT broker at {AWS_IOT_ENDPOINT}.")
+    except Exception as e:
+        print(f"Error connecting to MQTT broker: {e}")
+        return None
 
-    # Connect to the AWS IoT Core broker
-    mqtt_client.connect(AWS_IOT_ENDPOINT, port=8883, keepalive=60)
+    return mqtt_client
+
 
 # Callback functions for MQTT
 def on_connect(client, userdata, flags, rc):
