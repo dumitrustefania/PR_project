@@ -59,7 +59,8 @@ def init_mqtt_client():
         logger.info("TLS setup completed successfully.")
     except Exception as e:
         logger.error(f"Error setting up TLS: {e}")
-        return None
+        raise SystemExit("TLS setup failed. Exiting.")
+
 
     logger.debug("Setting up callback functions...")
     mqtt_client.on_connect = on_connect
@@ -226,9 +227,9 @@ def serve_frontend(path):
 if __name__ == "__main__":
     init_mqtt_client()
     if mqtt_client is None:
-        log.error("MQTT client initialization failed. Exiting.")
+        logger.debug("MQTT client initialization failed. Exiting.")
         exit(1)
-        
+
     mqtt_client.loop_start()
 
     socketio.run(app, debug=True)
