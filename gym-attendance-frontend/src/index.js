@@ -40,8 +40,8 @@ function App() {
         // Clean up the socket listeners when the component unmounts
         return () => {
             socket.off('new_user_detected');
-            socket.off('gym_status_updated');
-            // socket.off('user_updated');
+            // socket.off('gym_status_updated');
+            socket.off('user_updated');
         };
     }, []);
 
