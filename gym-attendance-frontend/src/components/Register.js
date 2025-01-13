@@ -1,21 +1,6 @@
-import { useEffect, useState } from 'react';
-import io from 'socket.io-client';
 import './Register.css';  // Import the CSS file for the modal styling
 
-const socket = io('https://pr-project-f8c7fbee3ae5.herokuapp.com');
-
-function Register() {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [cardId, setCardId] = useState(null);
-
-    useEffect(() => {
-        // Listen for the 'new_user_detected' event from the backend
-        socket.on('new_user_detected', (data) => {
-            setCardId(data.card_id);
-            setIsModalOpen(true);  // Open the modal to register the user
-        });
-    }, []);
-
+function Register({ cardId, setIsModalOpen }) {
     const handleRegisterUser = (userData) => {
         fetch('https://pr-project-f8c7fbee3ae5.herokuapp.com/api/register', {
             method: 'POST',
@@ -37,7 +22,7 @@ function Register() {
 
     return (
         <div>
-            {isModalOpen && (
+            {cardId && (
                 <div className="modal-overlay">
                     <div className="modal">
                         <h2>Register New User</h2>
