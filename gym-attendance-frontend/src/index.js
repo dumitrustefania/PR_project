@@ -24,24 +24,24 @@ function App() {
         });
 
         // Listen for the gym status update from the backend
-        socket.on('gym_status_updated', (data) => {
-            setGymClosed(data.gym_status);  // Update the gym status (open/closed)
-        });
+        // socket.on('gym_status_updated', (data) => {
+        //     setGymClosed(data.gym_status);  // Update the gym status (open/closed)
+        // });
 
         // Listen for the 'user_updated' event from the server
-        socket.on("user_updated", (data) => {
-            console.log("User updated:", data);
+        // socket.on("user_updated", (data) => {
+        //     console.log("User updated:", data);
 
-            // Logic to handle the updated user data can go here
-            // For now, refresh the page whenever the user is updated
-            // window.location.reload();
-        });
+        //     // Logic to handle the updated user data can go here
+        //     // For now, refresh the page whenever the user is updated
+        //     // window.location.reload();
+        // });
 
         // Clean up the socket listeners when the component unmounts
         return () => {
             socket.off('new_user_detected');
             socket.off('gym_status_updated');
-            socket.off('user_updated');
+            // socket.off('user_updated');
         };
     }, []);
 
