@@ -34,7 +34,7 @@ function App() {
 
             // Logic to handle the updated user data can go here
             // For now, refresh the page whenever the user is updated
-            window.location.reload();
+            // window.location.reload();
         });
 
         // Clean up the socket listeners when the component unmounts
